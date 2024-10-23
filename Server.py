@@ -9,74 +9,95 @@ clients = {}
 def handle_client(conn, addr):
     print(f"Địa chỉ {addr} đã kết nối.")
 
-    while True:
-        username = conn.recv(1024).decode()
-        if username in clients:
-            conn.sendall("Tên người chơi đã tồn tại vui lòng nhập lại.".encode())
-        else:
-            clients[username] = {'conn': conn, 'in_game': False, 'opponent': None}
-            conn.sendall("Tạo thành công người chơi.".encode())
-            break
+    # while True:
+    #     username = conn.recv(1024).decode()
+    #     pass
     
     try:
         while True:
             data = conn.recv(1024)
             message = json.loads(data.decode())
-            opponent = message['opponent']
 
-            if opponent not in clients:
-                conn.sendall("Không tìm thấy đối thủ.".encode())
-                continue
+            print(message)
+            if message.get('action') == 'username' and 'username' in message:
+                username = message['username']
+                if username in clients:
+                    conn.sendall("Tên người chơi đã tồn tại vui lòng nhập lại.".encode())
+                else:
+                    clients[username] = {'conn': conn, 'in_game': False, 'opponent': None}
+                    conn.sendall("Tạo thành công người chơi.".encode())
 
-            if 'waiting' not in clients[opponent]:
-                clients[opponent]['waiting'] = False
-
-            if clients[opponent]['in_game']:
-                conn.sendall("Đối thủ đang trong trận đấu.".encode())
-                continue
-
-            if clients[opponent]['waiting']:
-                clients[username]['in_game'] = True
-                clients[username]['opponent'] = opponent
-                clients[username]['waiting'] = False
-
-                clients[opponent]['in_game'] = True
-                clients[opponent]['opponent'] = username
-                clients[opponent]['waiting'] = False
-
-                conn.sendall(f"Đã kết nối với đối thủ {opponent}. Trò chơi bắt đầu.".encode())
-                clients[opponent]['conn'].sendall(f"Đã kết nối với đối thủ {username}. Trò chơi bắt đầu.".encode())
-                print(f"{username} và {opponent} đã bắt đầu trò chơi.")
-
-            else:
-                clients[username]['waiting'] = True
-                conn.sendall(f"Đối thủ {opponent} đang chờ kết nối. Hãy đợi cho đến khi họ tham gia.".encode())
+            elif message.get('action') == 'delete' and 'username' in message:
+                username = message['username']
+                if username in clients:
+                    if clients[username]['opponent']:
+                        opponent = clients[username]['opponent']
+                        clients[opponent]['in_game'] = False
+                        clients[opponent]['opponent'] = None
+                        clients[opponent]['waiting'] = True
+                    del clients[username]
+                    conn.sendall("Xóa người chơi thành công.".encode())
+                    print(f"Người chơi {username} đã bị xóa.")
+                else:
+                    conn.sendall("Người chơi không tồn tại.".encode())
             
-            # Xử lý trận đấu
-            while True:
-                data = conn.recv(1024).decode()
-                message = json.loads(data)
+            else:
                 opponent = message['opponent']
-                self_move = message['move']
 
-                if opponent in clients:
-                    opponent_conn = clients[opponent]['conn']
+                if opponent not in clients:
+                    conn.sendall("Không tìm thấy đối thủ.".encode())
+                    continue
 
-                    opponent_conn.sendall(json.dumps({
-                        'player': username,
-                        'move': self_move
-                    }).encode())
+                if 'waiting' not in clients[opponent]:
+                    clients[opponent]['waiting'] = False
 
-                    print(f"Đã gửi dữ liệu từ người chơi {opponent} đến {username}")
+                if clients[opponent]['in_game']:
+                    conn.sendall("Đối thủ đang trong trận đấu.".encode())
+                    continue
+
+                if clients[opponent]['waiting']:
+                    clients[username]['in_game'] = True
+                    clients[username]['opponent'] = opponent
+                    clients[username]['waiting'] = False
+
+                    clients[opponent]['in_game'] = True
+                    clients[opponent]['opponent'] = username
+                    clients[opponent]['waiting'] = False
+
+                    conn.sendall(f"Đã kết nối với đối thủ {opponent}. Trò chơi bắt đầu.".encode())
+                    clients[opponent]['conn'].sendall(f"Đã kết nối với đối thủ {username}. Trò chơi bắt đầu.".encode())
+                    print(f"{username} và {opponent} đã bắt đầu trò chơi.")
+
+                else:
+                    clients[username]['waiting'] = True
+                    conn.sendall(f"Đối thủ {opponent} đang chờ kết nối. Hãy đợi cho đến khi họ tham gia.".encode())
+                
+                # Xử lý trận đấu
+                while True:
+                    data = conn.recv(1024).decode()
+                    message = json.loads(data)
+                    opponent = message['opponent']
+                    self_move = message['move']
+
+                    if opponent in clients:
+                        opponent_conn = clients[opponent]['conn']
+
+                        opponent_conn.sendall(json.dumps({
+                            'player': username,
+                            'move': self_move
+                        }).encode())
+
+                        print(f"Đã gửi dữ liệu từ người chơi {opponent} đến {username}")
 
     finally:
         print(f"Người chơi {username} đã ngắt kết nối.")
-        if clients[username]['opponent']:
-            opponent = clients[username]['opponent']
-            clients[opponent]['in_game'] = False
-            clients[opponent]['opponent'] = None
-            clients[opponent]['waiting'] = True
-        del clients[username]
+        if username in clients:
+            if clients[username]['opponent']:
+                opponent = clients[username]['opponent']
+                clients[opponent]['in_game'] = False
+                clients[opponent]['opponent'] = None
+                clients[opponent]['waiting'] = True
+            del clients[username]
         conn.close()
 
 def start_server():

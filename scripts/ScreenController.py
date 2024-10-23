@@ -93,15 +93,22 @@ async def mainScreen(screen, font_path):
         if button_user.collidepoint((mouse_X, mouse_Y)):
             if click:
                 soundClickPlay(isSound)
+
+                if client.isConnected():
+                    client.deleteUser()
+
                 username, opponent = PlayerCombat(screen, client, isSound)
 
-                if username != None and opponent != None:
-                    soundClickPlay(isSound)
-                    soundBackGroundStop(isSound)
-                    soundGamePlay(isSound)
+                if username == None or opponent == None:
+                    client.deleteUser()
+                    continue
 
-                    dataInit = initGameScreen(screen)
-                    gameScreen(screen, dataInit, isSound, False, nameLenToIsCross(username, opponent) if( username != "" or opponent != "" )else True, None, [username, opponent])
+                soundClickPlay(isSound)
+                soundBackGroundStop(isSound)
+                soundGamePlay(isSound)
+
+                dataInit = initGameScreen(screen)
+                gameScreen(screen, dataInit, isSound, False, nameLenToIsCross(username, opponent) if( username != "" or opponent != "" )else True, None, [username, opponent] if( username != "" or opponent != "" )else None )
 
                 
                 
@@ -152,6 +159,8 @@ def PlayerCombat(screen, client, isSound):
     username = 'Tên người chơi'
     opponent = 'Tên đối thủ'
     canPlay = False
+    canInputUsername = True
+    canInputOpponent = True
     active_input = None
 
     font = pygame.font.Font(font_path, 30)
@@ -208,21 +217,22 @@ def PlayerCombat(screen, client, isSound):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     click = True
-                    if input_username_rect.collidepoint((mouse_X, mouse_Y)):
+                    if input_username_rect.collidepoint((mouse_X, mouse_Y)) and canInputUsername:
                         active_input = 'username'
-                    elif input_opponent_rect.collidepoint((mouse_X, mouse_Y)):
+                    elif input_opponent_rect.collidepoint((mouse_X, mouse_Y)) and canInputOpponent:
                         active_input = 'opponent'
                     else:
                         active_input = None
             if event.type == pygame.KEYDOWN:
                 if active_input == 'username':
                     if event.key == pygame.K_BACKSPACE:
-                        username = username[:-1]
+                        username = ''
                     else:
                         username += event.unicode
                 elif active_input == 'opponent':
                     if event.key == pygame.K_BACKSPACE:
-                        opponent = opponent[:-1]
+                        # opponent = opponent[:-1]
+                        opponent = ''
                     else:
                         opponent += event.unicode
             # print(mouse_X, mouse_Y)
@@ -233,7 +243,7 @@ def PlayerCombat(screen, client, isSound):
 
                 return "", ""
         
-        if button_login.collidepoint((mouse_X, mouse_Y)):
+        if button_login.collidepoint((mouse_X, mouse_Y)) and canInputUsername:
             if click:
                 soundClickPlay(isSound)
                 if username == 'Tên người chơi':
@@ -249,9 +259,10 @@ def PlayerCombat(screen, client, isSound):
                     continue
 
                 canPlay = True
+                canInputUsername = False
                 showMessageBox("Thông báo", "Đăng nhập thành công hãy điền thông tin đối thủ.")
             
-        if button_online.collidepoint((mouse_X, mouse_Y)):
+        if button_online.collidepoint((mouse_X, mouse_Y)) and canInputOpponent:
             if click:
                 soundClickPlay(isSound)
 
@@ -267,6 +278,7 @@ def PlayerCombat(screen, client, isSound):
                         showMessageBox("Cảnh báo!", "Vui lòng chỉnh sửa tên tối thủ.")
                         continue
                     
+                    canInputOpponent = False
                     print(f"Người chơi {username} thách đấu {opponent}")
                     return username, opponent
                 else:

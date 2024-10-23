@@ -20,9 +20,38 @@ class Client:
     def close(self):
         self.client.close()
     
+    def isConnected(self):
+        try:
+            self.client.send(b'')
+        except socket.error:
+            print("Client hiện không kết nối với bất kỳ server nào.")
+            return False
+        print("Client đang kết nối đến server.")
+        return True
+    
+    def deleteUser(self):
+        if self.username == None:
+            return False
+        try:
+            message = json.dumps({'action': 'delete', 'username': self.username})
+            print(message)
+            self.client.sendall(message.encode())
+            response = self.client.recv(1024).decode()
+            if response == "Xóa người chơi thành công.":
+                print("Người chơi đã được xóa khỏi server.")
+                self.username = None
+                return True
+            else:
+                print("Không thể xóa người chơi.")
+                return False
+        except Exception as e:
+            print(f"Lỗi khi gửi yêu cầu xóa: {e}")
+            return False
+    
     def inputUsername(self, username):
         self.username = username
-        self.client.sendall(self.username.encode())
+        message = json.dumps({'action': 'username', 'username': self.username})
+        self.client.sendall(message.encode())
         response = self.client.recv(1024).decode()
         if response == "Tên người chơi đã tồn tại vui lòng nhập lại.":
             print("Tên người chơi đã tồn tại vui lòng nhập lại.")
@@ -35,7 +64,7 @@ class Client:
         if opponent == self.username:
             print("Không thể nhập tên chính người chơi.")
             return False
-        message = json.dumps({'opponent': opponent})
+        message = json.dumps({'action': 'opponent', 'opponent': opponent})
         self.client.sendall(message.encode())
 
         while True:
@@ -53,9 +82,10 @@ class Client:
                     self.opponent = opponent
                     return True
 
-    def makeMove(self, row, col):
+    def makeMove(self, row, col):            
         try:
             message = {
+                'action': 'move',
                 'opponent': self.opponent,
                 'move': [row, col]
             }

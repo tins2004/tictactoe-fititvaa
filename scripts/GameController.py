@@ -363,9 +363,9 @@ def evenInputAICombat(screen, initData, algorithms_A, algorithms_B, isSound):
     # if tictactoe.getIsMachine():
     if elapsed_mini_time > 2:
         if tictactoe.getRule() == -1:
-            tickMachine(screen, initData, algorithms_A, True, isSound)
+            tickMachine(screen, initData, algorithms_A, True, isSound, None)
         elif tictactoe.getRule() == 1:
-            tickMachine(screen, initData, algorithms_B, True, isSound)
+            tickMachine(screen, initData, algorithms_B, True, isSound, None)
         # show(tictactoe.getMatrix())
                 
 
