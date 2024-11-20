@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 IP = 'localhost'
-PORT = 5555
+PORT = 9999
 
 class Client:
     def __init__(self):
@@ -30,11 +30,10 @@ class Client:
         return True
     
     def deleteUser(self):
-        if self.username == None:
+        if self.username is None:
             return False
         try:
             message = json.dumps({'action': 'delete', 'username': self.username})
-            print(message)
             self.client.sendall(message.encode())
             response = self.client.recv(1024).decode()
             if response == "Xóa người chơi thành công.":
@@ -47,7 +46,7 @@ class Client:
         except Exception as e:
             print(f"Lỗi khi gửi yêu cầu xóa: {e}")
             return False
-    
+
     def inputUsername(self, username):
         self.username = username
         message = json.dumps({'action': 'username', 'username': self.username})
@@ -94,15 +93,33 @@ class Client:
             print("Vui lòng nhập tọa độ hợp lệ (row col).")
 
     def updateMove(self):
-        data = self.client.recv(4096).decode()
-        if not data:
-            print("Kết nối đã ngắt.")
-            return
         try:
-            print(data)
+            data = self.client.recv(4096).decode()
+            if not data:
+                print("Kết nối đã ngắt.")
+                return
             message = json.loads(data)
+            
+            # Xử lý thông báo đối thủ đã thoát
+            if message.get('action') == 'logout':
+                print("Đối thủ đã thoát. Kết thúc trò chơi.")
+                return -1, -1
+            
             print(f"Đối thủ {message['player']} vừa di chuyển.")
             opponent_move = np.array(message['move'])
+            print(opponent_move)
             return opponent_move
         except json.JSONDecodeError as e:
             print(f"Lỗi phân tích JSON: {e}")
+            return None
+
+    def logout(self):
+        if self.username is None:
+            print("Không có người chơi để đăng xuất.")
+            return False
+        try:
+            message = json.dumps({'action': 'logout', 'username': self.username, 'opponent': self.opponent})
+            self.client.sendall(message.encode())
+        except Exception as e:
+            print(f"Lỗi khi gửi yêu cầu đăng xuất: {e}")
+            return False

@@ -1,5 +1,6 @@
 import pygame
 import time
+import ctypes
 from scripts.TicTacToe import TicTacToe
 from scripts.Algorithms import *
 from scripts.GlobalIndex import *
@@ -207,7 +208,7 @@ def tick(screen, pos_mouse, initData, isSound, online):
         tictactoe.addHistory([pos_row, pos_col])
 
         if online != None:
-            client.makeMove(pos_row, pos_col)
+           client.makeMove(pos_row, pos_col)
 
 
 def tickMachine(screen, initData, algorithms, isAICombat, isSound, online):
@@ -222,6 +223,10 @@ def tickMachine(screen, initData, algorithms, isAICombat, isSound, online):
     if online != None:
         print("load")
         pos_row, pos_col = client.updateMove()
+        if (pos_row <= -1 or pos_col <= -1):
+            pygame.quit()
+            ctypes.windll.user32.MessageBoxW(0, "Đối thủ đã bỏ chạy!", "Thông báo", 0x40 | 0x1)
+
 
     soundAttackPlay(isSound)
     coord = ((pos_col*initData[0] + (1/6)*initData[0]+10), (pos_row*initData[0] + (1/6)*initData[0]+10))
@@ -237,7 +242,7 @@ def tickMachine(screen, initData, algorithms, isAICombat, isSound, online):
         elif tictactoe.getPlayerRule() == 1:
             screen.blit(initData[1],coord)
     
-    
+     
     tictactoe.setMiniTime(None)
     tictactoe.setMatrix(pos_row, pos_col, tictactoe.getRule())
     tictactoe.changeRule(tictactoe.getRule())
@@ -292,9 +297,14 @@ def reloadScreenGame(screen, initData):
             for j in range(GRID_SIZE):
                 screen.blit(initData[3],(i*res+borders,j*res+borders))
 
-def exitButton(screen, initData, exitButton, pos_mouse, isSound):
+def exitButton(screen, initData, exitButton, pos_mouse, isSound, online):
     if exitButton.collidepoint((pos_mouse[0], pos_mouse[1])):
         if chooseOption(screen, initData, "Thoát", "Thoát", "Hủy", isSound):
+            if online != None:
+                client.logout()
+                pygame.quit()
+
+                ctypes.windll.user32.MessageBoxW(0, "Đối thủ đã bỏ chạy!", "Thông báo", 0x40 | 0x1)
             return True
         else:
             checkMatrix(screen, initData, tictactoe.getMatrix())

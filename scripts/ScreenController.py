@@ -534,8 +534,12 @@ def gameScreen(screen, initData, isSound, isMachine, isCross, algorithms, online
 
         if online != None:
             rival_icon = pygame.image.load(user_icon_path)
-            text_rival = online[1]
-            text_user  = online[0]  
+            if isCross:
+                text_user  = online[0] 
+                text_rival = online[1]
+            else:
+                text_rival = online[0]
+                text_user  = online[1]
 
             if online[0] == "":
                 text_user  = "Nhóm 2"
@@ -559,7 +563,7 @@ def gameScreen(screen, initData, isSound, isMachine, isCross, algorithms, online
         buttonArray = [exit_button, back_button, suggest_button, giveup_button]
 
         inputStatus = evenInput(screen, initData, buttonArray, isCross, isSound, online)
-        if exitButton(screen , initData, exit_button, inputStatus[0], isSound):
+        if exitButton(screen , initData, exit_button, inputStatus[0], isSound, online):
             soundBackGroundStop(isSound)
             soundMenuPlay(isSound)
             return
@@ -606,7 +610,7 @@ def AICombatScreen(screen, initData, isSound, algorithms_A, algorithms_B):
         exit_button = pygame.Rect(740, 365, 100, 40)
 
         inputStatus = evenInputAICombat(screen, initData, algorithms_A, algorithms_B, isSound)
-        if exitButton(screen , initData, exit_button, inputStatus[0], isSound):
+        if exitButton(screen , initData, exit_button, inputStatus[0], isSound, None):
             soundBackGroundStop(isSound)
             soundMenuPlay(isSound)
             return
